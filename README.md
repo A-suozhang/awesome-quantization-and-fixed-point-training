@@ -27,91 +27,160 @@
 
 > 该类方法最大的特点就是利用已经训练好的模型进行压缩，与Quantized-Aware Training相对比有几分 2-Stage的意味，优势在于可以利用已经基本确定的参数分布去分析，采取量化策略,对大模型比较有效，但是小模型会崩
 
-* Deep Compression
+* [1510-Deep Compression](https://arxiv.org/abs/1510.00149)
   * 利用了参数分布的知识，采用K-Means
-* [Fixed Point Quantization of Deep Convolutional Network](https://arxiv.org/abs/1511.06393)
-  * 高通 基于SQNR,前Deep Compression的上古时期，没有什么大的亮点
-* [Entropy Constraint Scalar Quantization](https://www.mdpi.com/1099-4300/18/12/449)
-  * 对每一个参数的Gradient做泰勒展开并且舍弃高阶项，化简得到哪些参数对最终Loss重要，以此作为剪枝或者量化的依据(选取聚类中心)
-  * ~~也可以作为剪枝的依据~~
-  * 和剪枝的这篇，有一定相关性[Designing Energy-Efficient Convolutional Neural Networks using Energy-Aware Pruning](https://arxiv.org/abs/1611.05128)
-    * 贪心的剪去对最后Loss影响不大的 (也就是TCP(Transfer Channel Prunning)中的剪枝方式)
-    * [NISP: Pruning Networks using Neuron Importance Score Propagation](https://arxiv.org/abs/1711.05908)也会涉及
-* Incremental Quantization
+* [1702-Incremental Quantization](https://arxiv.org/abs/1702.03044)
   * 分组-量化-Finetune的流程，每次retrain只有当前组被量化，迭代直到所有参数都被量化（介于A与B之间）
-* [Distilling the Knowledge in a Neural Network](https://arxiv.org/abs/1503.02531)
+* [1802-Model compression via distillation and quantization](https://arxiv.org/abs/1802.05668)
+  * ICLR 2018
   * 利用一个很大的Tecaher来引导低比特网络
-* Other Methods    (~~More Of a Digest Not Important~~)
-  * [TWN](https://arxiv.org/abs/1605.04711)
-    * TWN - 最小化全精度weight与Ternary Weight之间的L2 Norm
-  * [Retraining-Based Iterative Weight Quantization for Deep Neural Networks](https://arxiv.org/abs/1805.11233)
-  * ⭐[Post training 4-bit quantization of convolutional networks for rapid-deployment(NIPS 2019)](https://arxiv.org/abs/1810.05723)
+* [1810-Post training 4-bit quantization of convolutional networks for rapid-deployment(NIPS 2019)](https://arxiv.org/abs/1810.05723)
     * Intel, No Need To Finetune On Full Dataset
-  * [And the Bit Goes Down: Revisiting the Quantization of Neural Networks](https://arxiv.org/abs/1907.05686)
+    * 3 Methods,一些理论推导得到每channel比特数的分配以及ClippingValue可以依据已有的参数分布算出来
+* [1907-And the Bit Goes Down: Revisiting the Quantization of Neural Networks](https://arxiv.org/abs/1907.05686)
 
+* Other Methods    (~~More Of a Digest Not Important~~)
+  * [1511-Fixed Point Quantization of Deep Convolutional Network](https://arxiv.org/abs/1511.06393)
+     * 高通 基于SQNR,前Deep Compression的上古时期，没有什么大的亮点
+  * [Entropy Constraint Scalar Quantization](https://www.mdpi.com/1099-4300/18/12/449)
+    * 对每一个参数的Gradient做泰勒展开并且舍弃高阶项，化简得到哪些参数对最终Loss重要，以此作为剪枝或者量化的依据(选取聚类中心)
+    * ~~也可以作为剪枝的依据~~
+    * 和剪枝的这篇，有一定相关性[1611-Designing Energy-Efficient Convolutional Neural Networks using Energy-Aware Pruning](https://arxiv.org/abs/1611.05128)
+      * 贪心的剪去对最后Loss影响不大的 (也就是TCP(Transfer Channel Prunning)中的剪枝方式)
+      * [1711-NISP: Pruning Networks using Neuron Importance Score Propagation](https://arxiv.org/abs/1711.05908)也会涉及
+  * [1805-Retraining-Based Iterative Weight Quantization for Deep Neural Networks](https://arxiv.org/abs/1805.11233)
+  * [1906-Data-Free Quantization through weiht equailization & Bias Correction](https://arxiv.org/abs/1906.04721)
 
 ## B. Quantize-Aware-Training
 
 > 相比于第一类，该类方法的主要优势在于1-Stage，简化了训练过程
 
 * 早期的一些Binary/XNORNet均属于此类，大部分基于StraightThroughActivation的思想，即认为定点过程的导数为1
-  * XNORNet 对WA二值化，加上一个L1Norm的mean作为每层的ScalingFactor（其改进DoReFa加上了G的）
-  * [WRPN-Intel-ICLR2018](https://openreview.net/pdf?id=B1ZvaaeAZ)
+  * [1603-XNORNet](https://arxiv.org/abs/1603.05279)
+    * 对WA二值化，加上一个L1Norm的mean作为每层的ScalingFactor（其改进DoReFa加上了G的）
+  * [1605-TWN](https://arxiv.org/abs/1605.04711)
+    * TWN - 最小化全精度weight与Ternary Weight之间的L2 Norm 
+  * [1709-WRPN-Intel-ICLR2018](https://arxiv.org/abs/1709.01134)
     * 低比特WA(全精度G)，但是让网络更wide(增多了FeatureMap数量)
-* [Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference](https://arxiv.org/abs/1712.05877)
-  * 算是Quantize—Aware Training的开山了，包含了一个浮点的Scale Factor
+* [1712-Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference](https://arxiv.org/abs/1712.05877)
+  * 包含了一个浮点的Scale Factor,最大化利用了动态范围，利用了(0.45-0.5)的这一段空间
   * 非对称量化(有一个零点，以及一个浮点的Scale - 逐层)
   * Merge Conv-BN
-* ⭐[PACT](https://arxiv.org/abs/1805.06085)
+* [1805-PACT](https://arxiv.org/abs/1805.06085)
   * 训练中Quantize Activation，训练一个activation clipping parameter(修改Relu的clip范围s)(也就是在训练中找FixScale)
-* [Mixed Precision Training Of ConvNets Using Integer Operations-ICLR2918](https://arxiv.org/pdf/1802.00930.pdf)
-  * Intel
+* [1802-Mixed Precision Training Of ConvNets Using Integer Operations-ICLR2018](https://arxiv.org/pdf/1802.00930.pdf)
   * 16bit Training
+* [1805-Accurate & Efficient 2-bit QNN](https://www.semanticscholar.org/paper/ACCURATE-AND-EFFICIENT-2-BIT-QUANTIZED-NEURAL-Choi-Venkataramani/c3cb27f9ef7176658f37b607e75cc2c37f5e0ea8)
+    * PACT + SAWB (Statistics-Aware Weight bining)
+    * 文中有Analytic分析PACT和relu的表示能力一致
+* [1808-Learning to Quantize Deep Networks by Optimizing Quantization Intervals with Task Loss](https://arxiv.org/abs/1808.05779)
+  * 学习量化的区间和非线性量化的间隔
+* [1905-hawq: hessian aware quantization of neuralnetworks with mixed-precision](https://arxiv.org/pdf/1905.03696.pdf)
+    * [1911-V2](https://arxiv.org/pdf/1911.03852.pdf)
+
 * Other Works
-  * [Accurate & Efficient 2-bit QNN](https://www.semanticscholar.org/paper/ACCURATE-AND-EFFICIENT-2-BIT-QUANTIZED-NEURAL-Choi-Venkataramani/c3cb27f9ef7176658f37b607e75cc2c37f5e0ea8)
-    * Quantize with Shortcut / with PACT
-  * [Training Quantized Network with Auxiliary Gradient Module](https://arxiv.org/abs/1903.11236)
+   * [1903-Training Quantized Network with Auxiliary Gradient Module](https://arxiv.org/abs/1903.11236)
     * 额外的fullPrecision梯度模块(解决residue的skip connection不好定的问题，目的前向完全fix point)，有几分用一个FP去杠杆起低比特网络的意味
-  * [Mixed Precision Training With 8-bit Floating Point](https://arxiv.org/abs/1905.12334)
-    * WAGE All FP8
-    * 对比了RNE(Round2NearestEven)&sStochastic Rounding 
-  * [Learning to Quantize Deep Networks by Optimizing Quantization Intervals with Task Loss](http://openaccess.thecvf.com/content_CVPR_2019/papers/Jung_Learning_to_Quantize_Deep_Networks_by_Optimizing_Quantization_Intervals_With_CVPR_2019_paper.pdf)
-    * 学了Quantize Interval
-  * [Accumulation bit-width Scaling](https://arxiv.org/abs/1901.06588)
-    * IBM ICLR 2019, 找Accumulator可以压到多少⭐
+  * [1901-Accumulation bit-width Scaling](https://arxiv.org/abs/1901.06588)
+    * IBM ICLR 2019, 找Accumulator可以压到多少 
 
-
-
-## C. (Full) Fixed-Point Training
-
+# C. (Full) Fixed-Point Training
 > 纯定点的训练,大部分都是对一些经典的部分做一些简化。以及对梯度量化也会归入此类(目的是训练的加速，而不仅仅是为了部署) 
 
-* [DoReFa](https://arxiv.org/abs/1606.06160)
+* [1606-DoReFa](https://arxiv.org/abs/1606.06160)
   * 算是最先提出低比特训练
   * 每个Layer有一个ScalingFactor
-* [WAGE - Training & Inference with Integers in DNN](https://arxiv.org/abs/1802.04680)
-* ⭐ [Scalable Methods for 8-bit Training of Neural Networks](https://arxiv.org/abs/1805.11046)
+* [1802-WAGE - Training & Inference with Integers in DNN](https://arxiv.org/abs/1802.04680)
+  * 全定点，简化了很多部分，但是精度损失比较明显
+* [1705-TernGrad](https://arxiv.org/abs/1705.07878)
+  * 将梯度定点为3值(用类似TWN的方式)，目的是减少分布式训练中的通信传播
+* [1805-Scalable Methods for 8-bit Training of Neural Networks](https://arxiv.org/abs/1805.11046)
   * Intel(AIPG) NIPS2018 (WAG8)(RangeBN)
-* [Training Deep Neural Networks with 8-bit Floating Point Numbers](https://papers.nips.cc/paper/7994-training-deep-neural-networks-with-8-bit-floating-point-numbers.pdf))
-  * FP8
+* [1812-Training Deep Neural Networks with 8-bit Floating Point Numbers](https://arxiv.org/abs/1812.08011)
+  * FP8 - Training
+* [1905-mixed precision training with 8-bit floating point](https://arxiv.org/abs/1905.12334)
+  * wage all fp8
+  * 对比了rne(round2nearesteven)&sstochastic rounding 
+
+
 * Other Methods
-  * [Per-Tensor-Quantization of BackProp](https://arxiv.org/abs/1812.11732)
+  * [1812-Per-Tensor-Quantization of BackProp](https://arxiv.org/abs/1812.11732)
     * ICLR2019, Precision Assignment (好多数学假设分析),给出了一种确定每层位宽的方法
-  * [Hybrid 8-bit Training](https://papers.nips.cc/paper/8736-hybrid-8-bit-floating-point-hfp8-training-and-inference-for-deep-neural-networks)
+  * [1812-Hybrid 8-bit Training](https://arxiv.org/abs/1812.08011)
     * FP8的后续，对不同的组件提出不同的exponential bit与mantissa bit的划分方式
 
 # Ideas
 
+## Post-Training Quantization
+* Important Weighing
+  * 通过评估每个参数对最终Loss的重要程度，作为剪枝或是量化的依据，比如[这篇文章](https://www.mdpi.com/1099-4300/18/12/449)  
+* Knowledge Distillation
+  * 通过一个高精度模型给低比特模型的Finetune提供SoftLabel
+* Incremental & Iterative Quantization
+  * Gradually做Quantization，前者是每次选取一部分Weight，后者是逐渐降低比特数目
+* Analytical Correction
+  * 从解析的角度去做一些矫正或者是限制,[代表文章](https://arxiv.org/abs/1810.05723)
+* Data-Free Quantization
+  * 近几年兴起的一个领域,和👆的方法有一些相关性
+
+## Quantize-Aware Training
+
+> 定点数化之后相比于浮点最大的问题就是**动态范围**,也是主要的优化目的　
+
+* 限制动态范围
+  * 从训练角度就不要让参数分布的太散,减少造成的影响,比如[PACT](https://arxiv.org/abs/1805.06085)
+  * 训练中加大WeightDecay(L1 Norm)之后训练出来的模型定点效果会更好
+* 细粒度的确定量化区间
+  * 同一区间中会取同一个Range,通过减少被划入同一动态范围的参数量来减少Clamp的发生
+  * 从Layer-Wise到Channel-Wise再到Block-Wise
+* 细粒度的分配bit数
+  * Mixed-Precision的一系列方法
+  * Hybrid FP8 - 对A/W采取不同的指数bit分配
+* 扩大动态范围
+  * FP8 - 2次幂的浮点数
+* 充分利用动态范围
+  * 引入浮点ScalingFactor,[这篇](https://arxiv.org/abs/1712.05877)
+  * 非线性量化
+* 学习量化中的各种值(ClippingValue/QuantizeInterval)
+  * 用于替代解析方法求出来的一些解析解(解析方法的一些假设不是很精确)
+  * [PACT](https://arxiv.org/abs/1805.06085)学习了Relu的ClippingValue
+  * [KAIST的这篇文章](https://arxiv.org/abs/1808.05779)学习了量化的
+  * [TTQ](https://arxiv.org/pdf/1612.01064.pdf)学习了ScalingFactor
+
+### Fixed-Point Training
+
+> 一般只有有加速训练的需求的时候才需要量化梯度,但是由于梯度的特殊性(动态范围大,且大值小值都很重要)采用一般的量化方式不足,一般需要额外的设计;但是👆部分的很多方法的目的是为了更好的量化,印次对该部分也有指导价值
+
+* 量化梯度
+  * [TernGrad](https://papers.nips.cc/paper/6749-terngrad-ternary-gradients-to-reduce-communication-in-distributed-deep-learning)主要是利用了随机Rounding
+  * FP8/Fp16 扩大动态范围
+  * 更细粒度的划分Range
+* 简化训练
+  * BN
+    * RangeBN / L1BN
+  * WAGE简化了各种(献祭了精度)
+
+
+
+
+## Others
+* Fitting Weight or Activation？
+  * 从二值化网络开始，很多analytical的求解方式往往是在参数分布高斯的假设前提下，最小化量化后参数与量化前参数的MSE
+  * 后续的如[这篇](https://arxiv.org/abs/1907.05686)，认为参数可以变化，需要保存的是每一层的输出Activation
 * 把WA压缩到能放到片上能够显著提升硬件设计性能(显而易见)
   * 这可能也是BNN系列的比较繁荣的原因
 * Huge Batch Size可以帮助Binary的训练(原理上对低比特同理?)
 * Rounding Methods - Neareset/Stochastic/Biased Rounding
-* Fine-Grained能显著提高低比特Inference
-  * 这也是目前Fixed-Point Training的一定能work的办法之一
+  * Stochastic Rounding很关键，可以用到更低比特的信息
+  * ~~但是对硬件设计不太友好~~
+  * 也是[TernGrad](https://papers.nips.cc/paper/6749-terngrad-ternary-gradients-to-reduce-communication-in-distributed-deep-learning)之所以能work的原因
 * 从模型压缩角度看，硬件部署训练的几大难点(和不太elegant的地方)
   * 依赖大batch对存储要求高
   * 随机rounding，硬件难实现
 
+### 经典的建模方式
+* 如[Post-Training 4bit](https://arxiv.org/abs/1810.05723)一文,各种Analytical求解的方法都是将量化过程抽象为一个优化问题
+* (一般都假设输入的分布为Gauss),最小化量化前后参数的MSE
 
 
 ### Stochastic Roudning Related
@@ -138,6 +207,8 @@
 
 
 # Genre
+
+> 这一部分列举了很多文章，但是很多并没有阅读过
 
 ## Binary及其延申(极低比特)
 
@@ -184,7 +255,11 @@
 * [Analysis Of Quantized MOdels-ICLR2019](https://openreview.net/forum?id=ryM_IoAqYX)
 * [Training Quantized Network with Auxiliary Gradient Module](https://arxiv.org/abs/1903.11236)
 * [Learning to Quantize Deep Networks by Optimizing Quantization Intervals with Task Loss](https://arxiv.org/abs/1808.05779)
+* [ReLeQ: An Automatic Reinforcement Learning Approach  for Deep Quantization of Neural Networks](http://www-users.cselabs.umn.edu/classes/Spring-2019/csci8980/papers/releq.pdf)
 * [And the Bit Goes Down: Revisiting the Quantization of Neural Networks](https://arxiv.org/abs/1907.05686)
+* [Ternary MobileNets via Per-Layer Hybrid Filter Banks](https://arxiv.org/abs/1911.01028)
+* [Effective Training of Convolutional Neural Networks with Low-bitwidth Weights and Activations](https://arxiv.org/abs/1908.04680)
+* [MoBiNet: A Mobile Binary Network for Image Classification](https://arxiv.org/abs/1907.12629)
 
 # Docs
 
@@ -206,7 +281,7 @@
 ## PyTorch
 
 > [Quantization Tool](https://pytorch.org/docs/stable/quantization.html?highlight=quantize)
-
+* **QNNPack**
 * 支持PerTensor和PerChannel的量化，采用带zeropoint的rounding
 * Quantize Aware Training at ```torch.nn.qat torch.nn.intrinsic.qat```
 * 提供了很多Observer
