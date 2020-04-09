@@ -101,6 +101,8 @@
 * [1905-mixed precision training with 8-bit floating point](https://arxiv.org/abs/1905.12334)
   * wage all fp8
   * 对比了rne(round2nearesteven)&sstochastic rounding 
+* 全部8bit训练Flow - [Towards Unified INT8 Training for Convolutional Neural Network](https://arxiv.org/pdf/1912.12607.pdf)
+	* SenseTime CVPR 2020
 
 
 * Other Methods
@@ -159,6 +161,7 @@
   * BN
     * RangeBN / L1BN
   * WAGE简化了各种(献祭了精度)
+* 全部8bit训练Flow - [Towards Unified INT8 Training for Convolutional Neural Network](https://arxiv.org/pdf/1912.12607.pdf)
 
 
 
