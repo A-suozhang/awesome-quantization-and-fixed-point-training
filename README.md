@@ -77,6 +77,8 @@
   * 学习量化的区间和非线性量化的间隔
 * [1905-hawq: hessian aware quantization of neuralnetworks with mixed-precision](https://arxiv.org/pdf/1905.03696.pdf)
     * [1911-V2](https://arxiv.org/pdf/1911.03852.pdf)
+* [1901-Improving Neural Network Quantization with Retraining Outlier Channel Splitting](https://arxiv.org/pdf/1901.09504.pdf)
+	* [Code at](https://github.com/cornell-zhang/dnn-quant-ocs) - Implemented with Distiller Library
 
 * Other Works
    * [1903-Training Quantized Network with Auxiliary Gradient Module](https://arxiv.org/abs/1903.11236)
