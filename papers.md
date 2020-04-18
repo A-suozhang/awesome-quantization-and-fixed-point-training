@@ -1,3 +1,71 @@
+
+
+* [Towards Unified INT8 Training for Convolutional Neural Network](http://arxiv.org/abs/1912.12607)
+
+* 🔑 Key:   
+  * Mainly Dealing with the Gradient Quantization
+  * Empirical 4 Rules of Gradient
+  * Theoretical Convergence Bound & 2 Principles
+  * 2 Technique: Directional-Sensitive Gradient Clipping + Deviation Counteractive LR Scaling
+* 🎓 Source:  
+  * CVPR 2020 SenseTime + BUAA
+* 🌱 Motivation: 
+  * ![](https://github.com/A-suozhang/MyPicBed/raw/master//img/20200417205828.png)
+* 💊 Methodology:
+  * Symmetric Uniform Quantization with Stochastic Rounding
+  * Challenged for Quantizing Gradients
+    * Small perturbation would affect **direction**
+    * *Sharp and Wide Distribution（Unlike Weight/Activation）*
+    * Evolutionary: *As time goes on, even more sharp*
+    * *Layer Depth: Closely related to network depth(shallower the layer is, distribution sharper)*
+    * *Special Block: DW Layer, always sharp*
+  * Theoretical Bound afftected by 3 Terms(mainly with Quantization Error & LR & L2-Norm)
+    * Useful Tricks: 1. Min Q Error   2. Scale Down the LR
+  * Directional Sensitive Gradient Clipping
+    * Actually its just plain grad clipping
+    * Find the Clipping Value: Cosine Distance instead of MSE(Avoid the magnitude of grad's effect)
+  * Deviation Counteractive LR Scaling
+    * balance the exponentially accumulated grad error(deviation) by **exponentially decreasing LR accordingly**
+    * ```f(deviation) = max(e^(-\alpha*deviation), \beta)```
+      * \beta controls the lower bound of lr
+      * \alpha controls the decay degree
+  * Stochastic Rounding
+    * curandGenerator
+    * Linear Congruential Generator, yield a sequence of pseudo randomized number
+* 📐 Exps:
+  * ![](https://github.com/A-suozhang/MyPicBed/raw/master//img/20200417212040.png)
+  * ![](https://github.com/A-suozhang/MyPicBed/raw/master//img/20200417212102.png)
+  * ![](https://github.com/A-suozhang/MyPicBed/raw/master//img/20200417212118.png)
+* 💡 Ideas: 
+  * (Found with smaller LR, MobV2 training didn't crash,although perf. decay)
+  * Deviation of grad *exponentially* accumulated since its propagated through layer
+
+
+
+
+* [Improving Neural Network Quantization without Retraining using Outlier Channel Splitting](http://arxiv.org/abs/1901.09504)
+* 🔑 Key:   
+  * Outlier Channel Splitting
+* 🎓 Source:  
+  * Zhiru
+* 🌱 Motivation: 
+  * Post-training quantization follows bell-shaped distribution while hardware could better handle linear
+    * so the outlier becomes a problem
+* 💊 Methodology:
+  * Duplicate Outliers channels, then halves its value \
+  * Similar to 《Net2Net》 Net2WiderNet
+* 📐 Exps:
+* 💡 Ideas: 
+  * ![](https://github.com/A-suozhang/MyPicBed/raw/master//img/20200417213824.png)
+  * Post-Quantization's mainstream，First Clipping，then Sym-Linear-Quan
+    * Activation Clipping - Use Subset of input sample
+    * Earlier work: min L2 Norm of Quantization Error
+    * ACIQ: fits a Gaussian and Laplacian,use the fitting curve analytical compute optimal threshold
+    * SAWB: Linear extrapolate 6 dists
+    * TensorRt: Profile the dist, min the KL Divergence between original and quantized dist
+
+
+
 * [Training Quantized Network with Auxiliary Gradient Module]()
     * 额外的fullPrecision梯度模块(解决residue的skip connection不好定的问题，目的前向完全fix point)，有几分用一个FP去杠杆起低比特网络的意味
     * ![](https://github.com/A-suozhang/MyPicBed/raw/master/img/20191210113140.png)
