@@ -41,8 +41,6 @@
   * Deviation of grad *exponentially* accumulated since its propagated through layer
 
 
-
-
 * [Improving Neural Network Quantization without Retraining using Outlier Channel Splitting](http://arxiv.org/abs/1901.09504)
 * 🔑 Key:   
   * Outlier Channel Splitting
@@ -214,6 +212,8 @@
 ---
 
 
+# Binary Related
+
 * 早期的一些二值化网络的延申
   * XnorNet文章是同时提了BinaryWeightedNetwork和XNORNet
     * 向量乘变为二值向量做bitcount
@@ -243,6 +243,117 @@
       * ![](https://github.com/A-suozhang/MyPicBed/raw/master/img/20191213162446.png)
       * ![](https://github.com/A-suozhang/MyPicBed/raw/master/img/20191213165007.png)
       * ![](https://github.com/A-suozhang/MyPicBed/raw/master/img/20191213162700.png)
+
+- [BinaryConnect: Training Deep Neural Networks with binary weights during propagations](https://arxiv.org/abs/1511.00363)
+    - 2015
+    - Matthieu Courbariaux, Yoshua Bengio, Jean-Pierre David
+- [Binarized Neural Networks: Training Deep Neural Networks with Weights and Activations Constrained to +1 or -1](https://arxiv.org/abs/1602.02830)
+    - 2016
+    - Matthieu Courbariaux, Itay Hubara, Daniel Soudry, Ran El-Yaniv, Yoshua Bengio
+- [XNOR-Net: ImageNet Classification Using Binary Convolutional Neural Networks](https://arxiv.org/abs/1603.05279)
+    - 2016
+    - Mohammad Rastegari, Vicente Ordonez, Joseph Redmon, Ali Farhadi
+- [Convolutional Networks for Fast, Energy-Efficient Neuromorphic Computing](https://arxiv.org/abs/1603.08270)
+    - 2016
+    - Steven K. Esser, Paul A. Merolla, John V. Arthur, Andrew S. Cassidy, Rathinakumar Appuswamy, Alexander Andreopoulos, David J. Berg, Jeffrey L. McKinstry, Timothy Melano, Davis R. Barch, Carmelo di Nolfo, Pallab Datta, Arnon Amir, Brian Taba, Myron D. Flickner, Dharmendra S. Modha
+- [Ternary Weight Networks](https://arxiv.org/abs/1605.04711)
+    - 2016
+    - Fengfu Li, Bo Zhang, Bin Liu
+- [DoReFa-Net: Training Low Bitwidth Convolutional Neural Networks with Low Bitwidth Gradients](https://arxiv.org/abs/1606.06160)
+    - 2016
+    - Shuchang Zhou, Yuxin Wu, Zekun Ni, Xinyu Zhou, He Wen, Yuheng Zou
+- [Flexible Network Binarization with Layer-wise Priority](https://arxiv.org/abs/1709.04344)
+    - 2017
+    - Lixue Zhuang, Yi Xu, Bingbing Ni, Hongteng Xu
+- [ReBNet: Residual Binarized Neural Network](https://arxiv.org/abs/1711.01243)
+    - 2017
+    - Mohammad Ghasemzadeh, Mohammad Samragh, Farinaz Koushanfar
+- [Towards Accurate Binary Convolutional Neural Network](https://arxiv.org/abs/1711.11294)
+    - 2017
+    - Xiaofan Lin, Cong Zhao, Wei Pan
+- [Training a Binary Weight Object Detector by Knowledge Transfer for Autonomous Driving](https://arxiv.org/abs/1804.06332)
+    - 2018
+    - Jiaolong Xu, Peng Wang, Heng Yang, Antonio M. López
+- [Self-Binarizing Networks](https://arxiv.org/abs/1902.00730)
+    - 2019
+    - Fayez Lahoud, Radhakrishna Achanta, Pablo Márquez-Neila, Sabine Süsstrunk
+- [Latent Weights Do Not Exist: Rethinking Binarized Neural Network Optimization](https://arxiv.org/abs/1906.02107)
+    - 2019
+    - Koen Helwegen, James Widdicombe, Lukas Geiger, Zechun Liu, Kwang-Ting Cheng, Roeland Nusselder
+- [Least squares binary quantization of neural networks](https://arxiv.org/abs/2001.02786v1)
+    - 2020
+    - Hadi Pouransari, Oncel Tuzel
+- [Widening and Squeezing: Towards Accurate and Efficient QNNs](https://arxiv.org/abs/2002.00555)
+    - 2020
+    - Chuanjian Liu, Kai Han, Yunhe Wang, Hanting Chen, Chunjing Xu, Qi Tian
+- [Bi-Real Net: Enhancing the Performance of 1-bit CNNs With Improved Representational Capability and Advanced Training Algorithm](http://arxiv.org/abs/1808.00278)
+    - 2018
+    - 添加了一条额外的shortcut
+        * 卷积或者是BN的输出，在binarize化之前, connect this real activation到consecutive block
+    - 用一种新的tight approx来取代STE对grad进行矫正
+		* ![](https://github.com/A-suozhang/MyPicBed/raw/master//img/20200704195451.png)
+    - magnitude-aware gradient
+    - 从全精度的pretrained模型开始，activation用clip改为ReLU
+	- 提到了训练BNN的两个问题
+		* Non-diff
+		* Grad相对太小不能改变sign
+			* 保留一份real-value weight就可以
+- [Training Competitive Binary Neural Networks from Scratch](http://arxiv.org/abs/1812.01965)
+    - 2018
+    - 强调了目前(现在看起来好像不是目前了)的很多方法都需要借助2-stage training或者是full-precision model
+        * 所以想提出一种相对simple的训练方法，能够直接from scratch
+    - 同时首先提出了binary+Dense的模式
+    * 提到了Bi-real net
+        * binarize化的resnet，加入了additional shortcut
+			* 以一次额外的real-value Addition为代价
+			* 将Sign函数之前的部分，shortcutc到BN之后
+        * a change of gradient computation
+        * complex training strategy, finetuning from full-precision
+    * 稍微修改STE
+        * ![](https://github.com/A-suozhang/MyPicBed/raw/master//img/20200701161704.png)
+    * no weight decay
+    * how 2 choose scaling factor
+        * ![](https://github.com/A-suozhang/MyPicBed/raw/master//img/20200701162106.png)
+        * 有人prove了在前向的时候对weight做filter-wise的scaling factor是无效的，但是对grad可用
+        * scaling feature for activation
+        *   认为learning a useful scaling factor是很难，因为BN的存在
+        * ![](https://github.com/A-suozhang/MyPicBed/raw/master//img/20200701163703.png)
+- [XNORNet++](http://arxiv.org/abs/1909.13863)
+    * BMVC
+    * 原先版本的对Activation feature map计算scaling factor需要针对输入每次去做，computational expensive
+    * fuse weight & activation scaling factor into one
+    * (感觉很trivial很empirical)
+- [MeliusNet: Can Binary Neural Networks Achieve MobileNet-level Accuracy?](https://arxiv.org/abs/2001.05936)
+    - 2020
+    - Joseph Bethge, Christian Bartz, Haojin Yang, Ying Chen, Christoph Meinel
+    * 本质上是提出了一种新的Block
+    * 指出了原本的BNN的优化方法有
+        * 加大Channel数目
+        * multiple binary basis
+    * 认为BNN中的主要损失
+        * FP32乘法与Binary乘法之间的误差
+        * 统一的Scaling Factor所导致的Feature Map空间有限
+- [IRNet-Forward and Backward Information Retention for Accurate Binary Neural Networks](https://arxiv.org/pdf/1908.05858.pdf)
+    * IRNet(Information Retention Network)
+    * 2种主要方法分别针对forward和backward
+        * Libra-parameter-binarization - minimize the q-error and information loss
+            * balance & standardize weiht
+        * Error Decay Estimator(EDE)
+    * minimizing the quantization error - ||A-Q(A)|| - not always work
+        * Objective Function: Min(Q-error) + Max(Binary Entropy)
+        * ![](https://github.com/A-suozhang/MyPicBed/raw/master//img/20200701084603.png)
+        * ![](https://github.com/A-suozhang/MyPicBed/raw/master//img/20200701084527.png)
+            * Bernoulli Distribution
+        * 为了训练更加stable，对w减均值并且norm
+            * ![](https://github.com/A-suozhang/MyPicBed/raw/master//img/20200701084704.png)
+        * 额外加入了一个optimal bit-shift scalar
+            * ![](https://github.com/A-suozhang/MyPicBed/raw/master//img/20200701085049.png)
+            * <<>>s表示左/右shift
+        * activation的binary则是最简单的Sign
+        * 从Information View解决问题，先balance再binarize，去retain足够的information
+            * Libra-PB有bernoulli分布下的最大information entropy
+    * EDE
+        * ![](https://github.com/A-suozhang/MyPicBed/raw/master//img/20200701102734.png)
 
 ---
 
@@ -309,6 +420,29 @@
 * [AutoCompress: An Automatic DNN Structured Pruning Framework for Ultra-High Compression Rates](https://www.researchgate.net/profile/Zhiyuan_Xu9/publication/334316382_AutoSlim_An_Automatic_DNN_Structured_Pruning_Framework_for_Ultra-High_Compression_Rates/links/5ddf9aab4585159aa44f1634/AutoSlim-An-Automatic-DNN-Structured-Pruning-Framework-for-Ultra-High-Compression-Rates.pdf)
   * 提出了一个超级牛逼的Automated Framework **AutoCompress**
   * 用了Advanced Pruning方法**ADMM**
+
+* [Multi-Precision Quantized Neural Networks via Encoding Decomposition of -1 and +1](https://arxiv.org/abs/1905.13389)
+* 🔑 Key:   
+  * Decomposite Multi-Precision NN into multi BinaryNN, more efficient Deployment
+* 🎓 Source:  
+* 🌱 Motivation: 
+* 💊 Methodology:
+* 📐 Exps:
+* 💡 Ideas:
+
+* 创新点
+  * Decomposite NN into Multi BNNs
+  * M-bit Encoding Function
+  * Support Mixed Precisions
+
+  * Advan
+    * Many tasks, generality
+  * Question
+    * Typo in Table3 "Encoded Activation and Weights"
+    * Periodical
+    * the speed-up rate, whether concerning the encoding/decode and scale multiplication(although it may not cost much)
+    * Decomposition method hardware cost
+
 
 ---
 

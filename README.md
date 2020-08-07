@@ -2,8 +2,7 @@
 
 * （表明该整理的目的，为后续工作展开做一些指引）
 *  本文不完全包括了一些NN Fixed-Point Training的可能实现方向，为后续实验指路
-*  本文的最终目的是面向FPGA等嵌入式设备的NN 部署/训练，的一个软件仿真工具。为了Scalability,会尝试实现一些较为General的定点训练技巧
-   *  故可能**不会包含**BinaryNetwork等较为*激进/专门化(需要额外硬件计算结构设计)*的实现方式
+*  本文的最终目的是面向FPGA等嵌入式设备的NN 部署/训练，的一个软件仿真工具。为了Scalability,会尝试实现一些较为General的定点训练技巧现方式
    *  以及诸如MobileNet, ShuffleNet 等轻量化网络设计
 *  Quantization的两种主要方式
    *  基于CodeBook的(Deep Compression) ：实际参数还是高精度的，无法利用定点计算进行加速，仅能减少存储
@@ -16,6 +15,7 @@
    *  Fixed-Point Training: 训练过程中进行**纯定点(W/G/A)**，模拟在纯定点设备上进行训练
       *  Example：WAGE
       *  ~~有点激进，不知道是否能实现~~
+   * Binary-Network
 
 # Methods
 
@@ -107,6 +107,47 @@
 	* SenseTime CVPR 2020
 
 
+# D. Binary
+
+* 早期的一些Binary/XNORNet类似于Quantize-aware Training，但是大多依赖于Pretrained Model
+  * [1511-BinaryConnect](https://arxiv.org/abs/1511.00363)
+    * 最开始的二值网络
+  * [1602-Binarized Neural Networks](https://arxiv.org/abs/1602.02830)
+    * 同期最早的BNN
+  * [1603-XNORNet](https://arxiv.org/abs/1603.05279)
+    * 对WA二值化，加上一个L1Norm的mean作为每层的ScalingFactor（其改进DoReFa加上了G的）
+  * [1605-Ternary Weighted Network](https://arxiv.org/abs/1605.04711)
+    * TWN - 最小化全精度weight与Ternary Weight之间的L2 Norm 
+  * [1709-WRPN-Intel-ICLR2018](https://arxiv.org/abs/1709.01134)
+    * 低比特WA(全精度G)，但是让网络更wide(增多了FeatureMap数量)
+  * [1606-DoReFa](https://arxiv.org/abs/1709.01134)
+    * quantize gradient,提供了任意比特量化的实验
+* 各种Binary follow-up
+  - [1709-Flexible Network Binarization with Layer-wise Priority](https://arxiv.org/abs/1709.04344)
+  - [1711-ReBNet: Residual Binarized Neural Network](https://arxiv.org/abs/1711.01243)
+      - Binary+Resnet
+  - [1711-Towards Accurate Binary Convolutional Neural Network](https://arxiv.org/abs/1711.11294)
+  - [1804-Training a Binary Weight Object Detector by Knowledge Transfer for Autonomous Driving](https://arxiv.org/abs/1804.06332)
+  - [1902-Self-Binarizing Networks](https://arxiv.org/abs/1902.00730)
+  - [1906-Latent Weights Do Not Exist: Rethinking Binarized Neural Network Optimization](https://arxiv.org/abs/1906.02107)
+  - [2001-Least squares binary quantization of neural networks](https://arxiv.org/abs/2001.02786v1)
+  - [2002-Widening and Squeezing: Towards Accurate and Efficient QNNs](https://arxiv.org/abs/2002.00555)
+      - 提精度
+  - [1808-Bi-Real Net: Enhancing the Performance of 1-bit CNNs With Improved Representational Capability and Advanced Training Algorithm](http://arxiv.org/abs/1808.00278)
+    * 从头开始训练+额外的shortcut+STE的修正
+    * 提到了训练BNN的两个问题
+  - [1812-Training Competitive Binary Neural Networks from Scratch](http://arxiv.org/abs/1812.01965)
+  - [1909-XNORNet++](http://arxiv.org/abs/1909.13863)
+      * fuse weight & activation scaling factor into onel)
+  - [2001-MeliusNet: Can Binary Neural Networks Achieve MobileNet-level Accuracy?](https://arxiv.org/abs/2001.05936)
+      * 本质上是提出了一种新的Block
+      * 指出了原本的BNN的优化方法有
+  - [1908-IRNet-Forward and Backward Information Retention for Accurate Binary Neural Networks](https://arxiv.org/pdf/1908.05858.pdf)
+
+
+
+
+
 * Other Methods
   * [1812-Per-Tensor-Quantization of BackProp](https://arxiv.org/abs/1812.11732)
     * ICLR2019, Precision Assignment (好多数学假设分析),给出了一种确定每层位宽的方法
@@ -165,6 +206,85 @@
   * WAGE简化了各种(献祭了精度)
 * 全部8bit训练Flow - [Towards Unified INT8 Training for Convolutional Neural Network](https://arxiv.org/pdf/1912.12607.pdf)
 
+### Binary
+
+* Binarize本质上是一种极限的Quantize，所面临的问题其实也和Quantize类似，除了几个区别
+    * Overflow的Tradeoff不存在，由于只有一个量化区间
+    * 同理Rounding的操作也不存在
+* 但是存在的Error都是前向的QuantizationError与等精度的模型进行对比 - Forward Error
+    * 另外是由于梯度的问题导致收敛不到一个有效的结果 - Gradient Error
+* 解决以上两种问题的方法主要有
+* 前向误差 - 本质上是通过微调(整体的)在有限的表达能力下尽可能的去近似Counter的一个全精度模型
+    * Scaling Factor(更细粒度的)
+    * Adjustable/Learnable的NonLinear Function - PACT
+    * Gradual/Iterative/Recursive(交替的优化binary函数以及参数)-有点类似于Quantize-aware training的思想
+    * 通过引入一定的随机性(个人臆测比较玄学，不知道效果如何) - 类似Stochastic Roudning思想的(抖色深的) - Half-wave Gaussian 
+    * 增加模型的表达能力(增加模型大小，堆叠)
+        * 线性组合(multiple binary basis) - ABCNet
+        * KD
+        * Wide
+* 反向误差 - 本质上是修正/补偿梯度所带来的误差
+    * Loss修正 - 最朴素的是进行正则化，加一个奇形怪状的项来拉动
+        * 比较高一点的是一系列Differentiable的方法，把Loss导到各个部分来协助优化
+        * 更多learnable parameter - LQNet
+    * 对STE进行修正
+
+- [Binary Neural Networks: A Survey](https://arxiv.org/abs/2004.03333)
+    * 存在的问题： severe information loss & Discontinuality
+    * Explainable解释
+        * some filters are redundnant(play a similar role)
+    * 有这样的操作，去衡量某一层是否重要-将它从fp换成0/1，看acc decay
+        * traitioinal understanding for the layer sensitivity, is keeping the 1st and -1st layer with full precision
+    * beneficial for understanding the structure of NN
+    * ensemble to help training the BNN, but may face over-fitting 
+    * 分类 naive binarization / optimized binarization
+        * 后者针对quantize error或者是loss function做了一些额外的操作
+    * Preliminary
+        * ![](https://github.com/A-suozhang/MyPicBed/raw/master//img/20200603142600.png)
+        * BP: STE with clamp(-1,1)
+    * Category
+        * ![](https://github.com/A-suozhang/MyPicBed/raw/master//img/20200603142842.png)
+        * 几个方向
+            * Minimize Q Error
+                * Introducing Scale Factor(XNOR)
+                * Hash Map with Scaling Factor(BWHN)
+                * Train with Quantized Gradient, improved XNOR(DoReFa)
+                * More Channels, imporved XNOR(WRPN)
+                * Group and gradually Quantize
+                * Recursive approximation (HOPQ-Higher-order residue quantization)
+                    * not 1 step quantization, linear combination of each recursive step
+                * Similar linear combination of binary masks - ABCNet
+                * 2 Step Quantization 
+                    1. only quantize activation with learnable function
+                    2. then fix function and quantize weight (learn scale factor)
+                * PACT
+                    * learnable upper bound 
+                * LQ-Net (Learnt Quantization)
+                    * Jointly trainig the NN and the Quantizer
+                    * Surrport arbitary bit 
+                * XNORNet++
+                    * Fuse w/a scaling factor together to support arbitary bits
+            * Improved Loss func
+                * 主要focus在如何去globally适配binarization(对应上面的Q-error的就是更focus在局部上)
+                * LAB - Loss-aware-binarization  (quasi-Newton )
+                * Problems
+                    * degeneration
+                    * saturation
+                    * gradient mismatch
+                * INQ (Incremental Network Quantization)
+                    * 逐渐把Group扩大
+                * Apprentice Network
+                * DBNN - Distillation BinaryNN
+            * Reduce Gradient Error 
+                * 修正STE
+                    * 最朴素的方式会导致在[-1,1]之间的参数不会被更新(?)
+                    * 核心方式是Soft，Adjustable，SignFunction(然后不用STE)
+                    * ![](https://github.com/A-suozhang/MyPicBed/raw/master//img/20200605144853.png)
+                * Bi-real: approx sign function(一个二次函数)
+                * CBCB - Circulant BNN
+                * BNN+
+                * HWGQ - Half Gaussian Quantization
+                * Differentiable Soft Quantization
 
 
 
@@ -265,6 +385,7 @@
 * [Ternary MobileNets via Per-Layer Hybrid Filter Banks](https://arxiv.org/abs/1911.01028)
 * [Effective Training of Convolutional Neural Networks with Low-bitwidth Weights and Activations](https://arxiv.org/abs/1908.04680)
 * [MoBiNet: A Mobile Binary Network for Image Classification](https://arxiv.org/abs/1907.12629)
+* [Multi-Precision Quantized Neural Networks via Encoding Decomposition of -1 and +1](https://arxiv.org/abs/1905.13389)
 
 # Docs
 
