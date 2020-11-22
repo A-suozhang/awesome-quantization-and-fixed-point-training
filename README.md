@@ -142,7 +142,7 @@
   - [2001-MeliusNet: Can Binary Neural Networks Achieve MobileNet-level Accuracy?](https://arxiv.org/abs/2001.05936)
       * 本质上是提出了一种新的Block
       * 指出了原本的BNN的优化方法有
-  - [1908-IRNet-Forward and Backward Information Retention for Accurate Binary Neural Networks](https://arxiv.org/pdf/1908.05858.pdf)
+  - [1909-IRNet-Forward and Backward Information Retention for Accurate Binary Neural Networks](https://arxiv.org/pdf/1909.10788.pdf)
 
 
 
