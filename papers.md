@@ -98,7 +98,7 @@
     * ![](https://github.com/A-suozhang/MyPicBed/raw/master/img/20191210165123.png)
 
 * [Learning to Quantize Deep Networks by Optimizing Quantization Intervals with Task Loss](http://openaccess.thecvf.com/content_CVPR_2019/papers/Jung_Learning_to_Quantize_Deep_Networks_by_Optimizing_Quantization_Intervals_With_CVPR_2019_paper.pdf)
-	* Train a Quantize Interval, Orune & Clipping Together(这tm不就是clip吗，clip到0就叫prune吗，学到了)
+	* Train a Quantize Interval, Orune & Clipping Together
 	* ![](https://github.com/A-suozhang/MyPicBed/raw/master/img/20191213191652.png)
 	* 将一个Quantizer分为一个Transformer(将元素映射到[-1,1]或者是[0,1])和一个Discretezer
 		* ![](https://github.com/A-suozhang/MyPicBed/raw/master/img/20191213192019.png)
@@ -356,71 +356,68 @@
         * ![](https://github.com/A-suozhang/MyPicBed/raw/master//img/20200701102734.png)
 
 ---
-
-### [AMC-AutoML For Model Compression and Accleration on Mobile Devices]
-* ECCV 2018
-* Replace Handcrafted heuristics & rule-based Policy via AutoML
-* Also Perform Better
-
----
-
-* ![](https://github.com/A-suozhang/MyPicBed/raw/master/img/20191214170306.png)
-	* Process Pretrained Model Layer-By-Layer
-	* RL Agent receive Embedding Of an Layer,outtput prune ratio at
-	* 强调了网络layers并不是independent的
-	* Rule-Based couldn't Transfer(无法应对新的架构)
-		* Deeper Net, More Search Space
-	* 对于每一个Layer，做一个Encoding，之后，喂给RL Agent，其输出一个PruneRatio，剪完之后再给到下一层
-* 两种方式
-	* Resource-Constraint: 限制资源Flops，只去尝试采样出来的那些模块
-		* action space(prune ratio) 被限制为了只有低于resource的才会被采样 
-	* Acc-Constraint : 
-* 在包括Classification和Detcetion的多个地方做了实验
-* **本质上是用一种非常黑盒的方式直接从一个pretrain模型中学习出一个Agent来给出每一层的PruneRatio**
-  * 对于Resource-Constraint的场景，采用了直接将搜索空间加一个限制的方式来做
-  * 这种方式理论上很难训练出来，但是其实验结果证明了可以搜出一个架构（但是需要搜多久呢？）这个Agent是针对某一个网络的（等会它的weight需要确定吗？）
-  * *我们是否可以说明对AutoPrunning这个问题其实没有那么复杂，我们可以用这个近似线性的模型直接拟合出以一个能够学下去的模型*  
-    * 这样的一个问题就是不能保证泛化能力（也就是我们的拟合系数不能泛化过去）这个是否可以通过实验证明，其实这个问题没有这么复杂？
-  * 它利用RL Agent对每一层的敏感度进行了一个黑盒的建模
-    * 但是我们的所谓Fit的模块就是显式的去找这个敏感度
-    * *等会我们说的那个假设是各层之间需要时独立的，AMC的背景里提了每一层可能时不独立，它的层间建模方式有一些诡异*
-      * ![](https://github.com/A-suozhang/MyPicBed/raw/master/img/20191214181936.png)
-      * ![](https://github.com/A-suozhang/MyPicBed/raw/master/img/20191214182333.png)
-      * ![](https://github.com/A-suozhang/MyPicBed/raw/master/img/20191214182533.png)
-        * 好像就只是很敷衍的表示这个层间信息我们融入进来了
-* 我觉得Floor这个点非常有意义，甚至可以单独领出来思考，因为一些黑盒子，是很难显式的建模出一些很明显的先验的，比如说16~20   
-  * 而Amc的Agent输入Embedding中是包含了Flops信息的，会有一些非常explicit的rule，**黑盒子建模得不偿失**
-* Fine-Grained Action Space,如果是discrete action的话，很难explore出来，同时忽略了order信息，所以用DDPG，来在连续域做拟合
-* DDPG Agent接收到的是一个StreamOfLayer，整个网络过完了之后收到一个reward(使用的Acc是finetune之前的)
-    * 限定action space，直接将Reward设置为-Error
-    * ![](https://github.com/A-suozhang/MyPicBed/raw/master/img/20191214191907.png)
-      * 这样暴力的方法对实际硬件设计，Flops和PruneRatio严格正相关，但是硬件其实不一定，这是一个很明确的事情，可以直接加上（？）
-* ![](https://github.com/A-suozhang/MyPicBed/raw/master/img/20191214193113.png)
-  * 做了这样的一个假设，我感觉还是挺暴力的，回头应该看一下这个结论是哪里来的
-* 设置的时候并没有把BN加入到Conv层中
-* ![](https://github.com/A-suozhang/MyPicBed/raw/master/img/20191214195522.png)
-  * 感觉也没有差太多啊，因为大家都要Finetune的嘛
-  
----
-
-* 有一个小问题，就是我们的敏感度分析，的确没有办法建模出多层之间的影响，这个要么要说明可以看作独立，要么要加层间
-  * 现在就是对每一层单独考虑，但是我觉得我们如果步长比较小的话问题不大
-* 我感觉需要问一下涛哥关于DDPG的setback以及它这种直接砍搜索空间的方法合不合理
-* AMC的建模是对网络结构的建模，如果weight发生改变是不是这个就不是很成立了？需要重新再训练一个agent
-  * agent是不是weight-invariant的
-* [AutoPruner: An End-to-End Trainable Filter Pruning Method forEfficient Deep Model Inference](https://arxiv.org/pdf/1805.08941.pdf)
-  * 在Finetune的过程当中完成Prun
-* [ECC: Platform-Independent Energy-Constrained Deep Neural Network Compression via a Bilinear Regression Mode](https://arxiv.org/pdf/1812.01803.pdf)
-  * 有一些类似，不过他们Regressiond的是Energy，而且最后实验是在TX上做的
-  * 是整个模型压缩，而不是layer-by-layer
-  * relatedwork列举了几个工作比较有价值
-  * ![](https://github.com/A-suozhang/MyPicBed/raw/master/img/20191214233728.png)
-* [Automated Pruning for Deep Neural Network Compression](https://ieeexplore.ieee.org/abstract/document/8546129)
-  * 可导的AutoPrune
-* [AutoCompress: An Automatic DNN Structured Pruning Framework for Ultra-High Compression Rates](https://www.researchgate.net/profile/Zhiyuan_Xu9/publication/334316382_AutoSlim_An_Automatic_DNN_Structured_Pruning_Framework_for_Ultra-High_Compression_Rates/links/5ddf9aab4585159aa44f1634/AutoSlim-An-Automatic-DNN-Structured-Pruning-Framework-for-Ultra-High-Compression-Rates.pdf)
-  * 提出了一个超级牛逼的Automated Framework **AutoCompress**
-  * 用了Advanced Pruning方法**ADMM**
-
+<!-- 
+   - ### [AMC-AutoML For Model Compression and Accleration on Mobile Devices]
+   - * ECCV 2018
+   - * Replace Handcrafted heuristics & rule-based Policy via AutoML
+   - * Also Perform Better
+   - 
+   - ---
+   - * ![](https://github.com/A-suozhang/MyPicBed/raw/master/img/20191214170306.png)
+   -    -     * Process Pretrained Model Layer-By-Layer
+   -    -     * RL Agent receive Embedding Of an Layer,outtput prune ratio at
+   -    -     * 强调了网络layers并不是independent的
+   -    -     * Rule-Based couldn't Transfer(无法应对新的架构)
+   -    -         * Deeper Net, More Search Space
+   -    -     * 对于每一个Layer，做一个Encoding，之后，喂给RL Agent，其输出一个PruneRatio，剪完之后再给到下一层
+   -    - * 两种方式
+   -    -     * Resource-Constraint: 限制资源Flops，只去尝试采样出来的那些模块
+   -    -         * action space(prune ratio) 被限制为了只有低于resource的才会被采样 
+   -    -     * Acc-Constraint : 
+   -    - * 在包括Classification和Detcetion的多个地方做了实验
+   -    - * **本质上是用一种非常黑盒的方式直接从一个pretrain模型中学习出一个Agent来给出每一层的PruneRatio**
+   -    -   * 对于Resource-Constraint的场景，采用了直接将搜索空间加一个限制的方式来做
+   -    -   * 这种方式理论上很难训练出来，但是其实验结果证明了可以搜出一个架构（但是需要搜多久呢？）这个Agent是针对某一个网络的（等会它的weight需要确定吗？）
+   -    -   * *我们是否可以说明对AutoPrunning这个问题其实没有那么复杂，我们可以用这个近似线性的模型直接拟合出以一个能够学下去的模型*  
+   -    -     * 这样的一个问题就是不能保证泛化能力（也就是我们的拟合系数不能泛化过去）这个是否可以通过实验证明，其实这个问题没有这么复杂？
+   -    -   * 它利用RL Agent对每一层的敏感度进行了一个黑盒的建模
+   -    -     * 但是我们的所谓Fit的模块就是显式的去找这个敏感度
+   -    -     * *等会我们说的那个假设是各层之间需要时独立的，AMC的背景里提了每一层可能时不独立，它的层间建模方式有一些诡异*
+   -    -       * ![](https://github.com/A-suozhang/MyPicBed/raw/master/img/20191214181936.png)
+   -    -       * ![](https://github.com/A-suozhang/MyPicBed/raw/master/img/20191214182333.png)
+   -    -       * ![](https://github.com/A-suozhang/MyPicBed/raw/master/img/20191214182533.png)
+   -    -         * 好像就只是很敷衍的表示这个层间信息我们融入进来了
+   -    - * 我觉得Floor这个点非常有意义，甚至可以单独领出来思考，因为一些黑盒子，是很难显式的建模出一些很明显的先验的，比如说16~20   
+   -    -   * 而Amc的Agent输入Embedding中是包含了Flops信息的，会有一些非常explicit的rule，**黑盒子建模得不偿失**
+   -    - * Fine-Grained Action Space,如果是discrete action的话，很难explore出来，同时忽略了order信息，所以用DDPG，来在连续域做拟合
+   -    - * DDPG Agent接收到的是一个StreamOfLayer，整个网络过完了之后收到一个reward(使用的Acc是finetune之前的)
+   -    -     * 限定action space，直接将Reward设置为-Error
+   -    -     * ![](https://github.com/A-suozhang/MyPicBed/raw/master/img/20191214191907.png)
+   -    -       * 这样暴力的方法对实际硬件设计，Flops和PruneRatio严格正相关，但是硬件其实不一定，这是一个很明确的事情，可以直接加上（？）
+   -    - * ![](https://github.com/A-suozhang/MyPicBed/raw/master/img/20191214193113.png)
+   -    -   * 做了这样的一个假设，我感觉还是挺暴力的，回头应该看一下这个结论是哪里来的
+   -    - * 设置的时候并没有把BN加入到Conv层中
+   -    - * ![](https://github.com/A-suozhang/MyPicBed/raw/master/img/20191214195522.png)
+   - ---
+   - 
+   - * 有一个小问题，就是我们的敏感度分析，的确没有办法建模出多层之间的影响，这个要么要说明可以看作独立，要么要加层间
+   -   * 现在就是对每一层单独考虑，但是我觉得我们如果步长比较小的话问题不大
+   - * 我感觉需要问一下涛哥关于DDPG的setback以及它这种直接砍搜索空间的方法合不合理
+   - * AMC的建模是对网络结构的建模，如果weight发生改变是不是这个就不是很成立了？需要重新再训练一个agent
+   -   * agent是不是weight-invariant的
+   - * [AutoPruner: An End-to-End Trainable Filter Pruning Method forEfficient Deep Model Inference](https://arxiv.org/pdf/1805.08941.pdf)
+   -   * 在Finetune的过程当中完成Prun
+   - * [ECC: Platform-Independent Energy-Constrained Deep Neural Network Compression via a Bilinear Regression Mode](https://arxiv.org/pdf/1812.01803.pdf)
+   -   * 有一些类似，不过他们Regressiond的是Energy，而且最后实验是在TX上做的
+   -   * 是整个模型压缩，而不是layer-by-layer
+   -   * relatedwork列举了几个工作比较有价值
+   -   * ![](https://github.com/A-suozhang/MyPicBed/raw/master/img/20191214233728.png)
+   - * [Automated Pruning for Deep Neural Network Compression](https://ieeexplore.ieee.org/abstract/document/8546129)
+   -   * 可导的AutoPrune
+   - * [AutoCompress: An Automatic DNN Structured Pruning Framework for Ultra-High Compression Rates](https://www.researchgate.net/profile/Zhiyuan_Xu9/publication/334316382_AutoSlim_An_Automatic_DNN_Structured_Pruning_Framework_for_Ultra-High_Compression_Rates/links/5ddf9aab4585159aa44f1634/AutoSlim-An-Automatic-DNN-Structured-Pruning-Framework-for-Ultra-High-Compression-Rates.pdf)
+   -   * 提出了一个超级牛逼的Automated Framework **AutoCompress**
+   -   * 用了Advanced Pruning方法**ADMM**
+   -  -->
 * [Multi-Precision Quantized Neural Networks via Encoding Decomposition of -1 and +1](https://arxiv.org/abs/1905.13389)
 * 🔑 Key:   
   * Decomposite Multi-Precision NN into multi BinaryNN, more efficient Deployment
@@ -446,40 +443,40 @@
 
 ---
 
-* [Layer Compensated Prunning For Resource Constraint CNN](https://arxiv.org/pdf/1810.00518.pdf)
-  * 之前大多都是确定每层需要剪多少，然后在层内排序；这里看成一个Global Sorting的问题
-  * 用了Meta Learning，找到了最好的solution？
-* [Efficient Neural Network Compression](http://openaccess.thecvf.com/content_CVPR_2019/papers/Kim_Efficient_Neural_Network_Compression_CVPR_2019_paper.pdf)
-  * 快速的找SVD分解对应的那个Rank
-  * ~~把他挂在这里只是因为这个题目实在有点霸气...~~
-  * [AutoRank: Automated Rank Selection for Effective Neural Network Customization](https://mlforsystems.org/assets/papers/isca2019/MLforSystems2019_Mohammad_Samragh.pdf)
-* [Leveraging Filter Correlation For Deep Model Compression](https://arxiv.org/abs/1811.10559)
-  * 可以认为他们认为Filter是怎么相关的来支持我们的独立性假设
-* [SNN Compression](https://arxiv.org/abs/1911.00822)
-* [PruneTrain: fast neural network training by dynamic sparse model reconfiguration](https://dl.acm.org/citation.cfm?id=3356156)
-  * Lasso的那篇文章
-* [EPNAS: Efficient Progressive Neural Architecture Search](https://arxiv.org/abs/1907.04648)
-* [Mapping Neural Networks to FPGA-Based IoT Devices for Ultra-Low Latency Processing](https://www.mdpi.com/1424-8220/19/13/2981)
-  * 不是9102年还发这种文章
-* [SQuantizer: Simultaneous Learning for Both Sparse and Low-precision Neural Networks](https://arxiv.org/abs/1812.08301)
-  * 尝试一步到位，但是好像没有引用
-* [Band-limited Training and Inference for Convolutional Neural Networks](http://proceedings.mlr.press/v97/dziedzic19a.html)
-* [PocketFlow: An Automated Framework for Compressing and Accelerating Deep Neural Networks](https://openreview.net/forum?id=H1fWoYhdim)
-  * 也是automation，但是主要贡献点和我们不是特别一样（Tecent NIPS2018）
-* [Cascaded Projection: End-To-End Network Compression and Acceleration](http://openaccess.thecvf.com/content_CVPR_2019/papers/Minnehan_Cascaded_Projection_End-To-End_Network_Compression_and_Acceleration_CVPR_2019_paper.pdf)
-  * CVPR2019 Low-Ranlk Projection
-* [Low Precision Constant Parameter CNN on FPGA](https://arxiv.org/pdf/1901.04969.pdf)
-  * 纯FPGA的文章，摘要很短，很好奇
-* [Reconstruction Error Aware Pruning for Accelerating Neural Networks](https://link.springer.com/chapter/10.1007/978-3-030-33720-9_5)
-  * 这个所谓的reconstruct error是啥，是不是可以融入到我们的敏感度分析之中？ 
-* [ReForm: Static and Dynamic Resource-Aware DNN Reconfiguration Framework for Mobile Device](https://dl.acm.org/citation.cfm?id=3324696)
-  * DAC19
-* [Network Pruning via Transformable Architecture Search](https://arxiv.org/abs/1905.09717)
-* [AutoML for Architecting Efficient and Specialized Neural Networks](https://ieeexplore.ieee.org/abstract/document/8897011)
-  * 有点牛逼，说有autoprunning和automixedprecision
-* [BANANAS: Bayesian Optimization with Neural Architectures for Neural Architecture Search](https://arxiv.org/abs/1910.11858)
-* [Accelerate CNN via Recursive Bayesian Pruning](http://openaccess.thecvf.com/content_ICCV_2019/html/Zhou_Accelerate_CNN_via_Recursive_Bayesian_Pruning_ICCV_2019_paper.html)
-* [A Deep Learning-based Radar and Camera Sensor Fusion Architecture for Object Detection](https://ieeexplore.ieee.org/abstract/document/8916629/)
-* [Neural Network Pruning with Residual-Connections and Limited-Data](https://arxiv.org/abs/1911.08114)
-* [AutoQB: AutoML for Network Quantization and Binarization on Mobile Devices](https://arxiv.org/abs/1902.05690)
-* [PruneTrain: Gradual Structured Pruning from Scratch for Faster Neural Network Training](https://arxiv.org/abs/1901.09290)
+<!-- * [Layer Compensated Prunning For Resource Constraint CNN](https://arxiv.org/pdf/1810.00518.pdf)
+   -   * 之前大多都是确定每层需要剪多少，然后在层内排序；这里看成一个Global Sorting的问题
+   -   * 用了Meta Learning，找到了最好的solution？
+   - * [Efficient Neural Network Compression](http://openaccess.thecvf.com/content_CVPR_2019/papers/Kim_Efficient_Neural_Network_Compression_CVPR_2019_paper.pdf)
+   -   * 快速的找SVD分解对应的那个Rank
+   -   * ~~把他挂在这里只是因为这个题目实在有点霸气...~~
+   -   * [AutoRank: Automated Rank Selection for Effective Neural Network Customization](https://mlforsystems.org/assets/papers/isca2019/MLforSystems2019_Mohammad_Samragh.pdf)
+   - * [Leveraging Filter Correlation For Deep Model Compression](https://arxiv.org/abs/1811.10559)
+   -   * 可以认为他们认为Filter是怎么相关的来支持我们的独立性假设
+   - * [SNN Compression](https://arxiv.org/abs/1911.00822)
+   - * [PruneTrain: fast neural network training by dynamic sparse model reconfiguration](https://dl.acm.org/citation.cfm?id=3356156)
+   -   * Lasso的那篇文章
+   - * [EPNAS: Efficient Progressive Neural Architecture Search](https://arxiv.org/abs/1907.04648)
+   - * [Mapping Neural Networks to FPGA-Based IoT Devices for Ultra-Low Latency Processing](https://www.mdpi.com/1424-8220/19/13/2981)
+   -   * 不是9102年还发这种文章
+   - * [SQuantizer: Simultaneous Learning for Both Sparse and Low-precision Neural Networks](https://arxiv.org/abs/1812.08301)
+   -   * 尝试一步到位，但是好像没有引用
+   - * [Band-limited Training and Inference for Convolutional Neural Networks](http://proceedings.mlr.press/v97/dziedzic19a.html)
+   - * [PocketFlow: An Automated Framework for Compressing and Accelerating Deep Neural Networks](https://openreview.net/forum?id=H1fWoYhdim)
+   -   * 也是automation，但是主要贡献点和我们不是特别一样（Tecent NIPS2018）
+   - * [Cascaded Projection: End-To-End Network Compression and Acceleration](http://openaccess.thecvf.com/content_CVPR_2019/papers/Minnehan_Cascaded_Projection_End-To-End_Network_Compression_and_Acceleration_CVPR_2019_paper.pdf)
+   -   * CVPR2019 Low-Ranlk Projection
+   - * [Low Precision Constant Parameter CNN on FPGA](https://arxiv.org/pdf/1901.04969.pdf)
+   -   * 纯FPGA的文章，摘要很短，很好奇
+   - * [Reconstruction Error Aware Pruning for Accelerating Neural Networks](https://link.springer.com/chapter/10.1007/978-3-030-33720-9_5)
+   -   * 这个所谓的reconstruct error是啥，是不是可以融入到我们的敏感度分析之中？ 
+   - * [ReForm: Static and Dynamic Resource-Aware DNN Reconfiguration Framework for Mobile Device](https://dl.acm.org/citation.cfm?id=3324696)
+   -   * DAC19
+   - * [Network Pruning via Transformable Architecture Search](https://arxiv.org/abs/1905.09717)
+   - * [AutoML for Architecting Efficient and Specialized Neural Networks](https://ieeexplore.ieee.org/abstract/document/8897011)
+   -   * 有点牛逼，说有autoprunning和automixedprecision
+   - * [BANANAS: Bayesian Optimization with Neural Architectures for Neural Architecture Search](https://arxiv.org/abs/1910.11858)
+   - * [Accelerate CNN via Recursive Bayesian Pruning](http://openaccess.thecvf.com/content_ICCV_2019/html/Zhou_Accelerate_CNN_via_Recursive_Bayesian_Pruning_ICCV_2019_paper.html)
+   - * [A Deep Learning-based Radar and Camera Sensor Fusion Architecture for Object Detection](https://ieeexplore.ieee.org/abstract/document/8916629/)
+   - * [Neural Network Pruning with Residual-Connections and Limited-Data](https://arxiv.org/abs/1911.08114)
+   - * [AutoQB: AutoML for Network Quantization and Binarization on Mobile Devices](https://arxiv.org/abs/1902.05690)
+   - * [PruneTrain: Gradual Structured Pruning from Scratch for Faster Neural Network Training](https://arxiv.org/abs/1901.09290) -->
